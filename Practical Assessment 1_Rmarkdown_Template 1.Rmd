@@ -1,0 +1,365 @@
+---
+title: "Data Wrangling (Data Preprocessing)"
+author: "Mrwan Alhandi"
+date: "10 Augest 2022"
+output:
+  html_notebook: default
+  pdf_document: default
+  html_document:
+    df_print: paged
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+## **Setup**
+
+```{r}
+library(kableExtra)
+library(magrittr)
+library(readr)
+library(dplyr)
+library(foreign)
+library(forcats)
+library(lubridate)
+library(openxlsx)
+library(stringr)
+```
+
+## **Data Description**
+
+**I have set the following conditions that must apply to a data set:**
+
+\*No large data due to reading/exporting time.\
+\* Financial related (area of interest).\
+\* Clear variables/attributes that can be easily understood.\
+\* I can apply simple statistical measurements.\
+\* I can remove some errors that prevent me from analyzing the data so
+that I can apply what I have learnt.\
+\* From 2019-2022.
+
+**What I was searching for:**
+
+\* I was looking for two data set that describe the financial budget
+specifically the expenditure of Australia and my mother country which is
+Saudi Arabia. It was easy for me to find a data set that fits the
+conditions for Australia. Unfortunately, I have spent hours trying to
+find the same for my country, but I could not find a good source. My
+country data bases and data sets contains tons of missing data and
+errors. The data usually I found about my country is general and not
+specific. Therefore, I decided to only read and discover the data set
+for Australia and remove the idea of comparing the two countries.
+
+**Data background:**\
+\*The state Victoria budget data set, downloaded from the below link
+website, contains data recording all the projects that the state budget
+is funding and building to support the community. The data set contains
+303 row.\
+\*Specifically, the state Victoria budget data set contains the
+following variables:\
+\*unique_id: nominal data type serves as labels\
+\*name: Name of the project\
+\*theme: theme of project. E.g. Education,Health.. etc\
+\*entity: name of the department\
+\*type: specification of the theme in detail. E.g. If the theme is
+Education, the type could be new school construction.\
+\*investment: expenditure on project\
+\*Iga: city name in Victoria\
+\*feature_point: the project coverage area\
+\*description:self-evident
+
+Data set link:\
+\*<https://discover.data.vic.gov.au/dataset/state-budget-2022-23-data-supporting-the-interactive-udget-website-map-visualisation>\
+\*Data file type: csv\
+\*It is possible to visualize the projects on the map using the
+following website:\
+\*<https://www.budget.vic.gov.au/budgetmap/lga/MELBOURNE?selectedType=postcode&selectedName=3000>\
+\*From the search bar below in the website, I can search for the
+postcode and see related projects.
+
+## **Read/Import Data**
+
+```{r}
+
+# importing csv file
+projects <- read_csv("2022-23-state-budget-mapping-data.csv")
+
+# changing the data type to data frame
+projects_df <- data.frame(projects)
+
+# the first few rows
+head(projects_df)
+```
+
+The file is csv and I used read_csv() function from readr library for
+faster reading. I then changed the object data type to data frame using
+data.frame() function. Finally, I used head() function to show the first
+few rows of the data frame.
+
+## **Inspect and Understand**
+
+```{r}
+
+# class
+class(projects_df)
+# dimension
+dim(projects_df)
+# variable and schema
+str(projects_df)
+# attributes
+attributes(projects_df)
+
+# R identified correctly some of the variable types, but others can be corrected:
+# theme,entity, and feature_type are shown to be character type, but it is better represented as factor.
+# changing them to factors
+projects_df$theme <- projects_df$theme %>% as.factor()
+projects_df$entity <- projects_df$entity %>% as.factor()
+projects_df$feature_type <- projects_df$feature_type %>% as.factor()
+# checking if they are changed:
+class(projects_df$theme)
+class(projects_df$entity)
+class(projects_df$feature_type)
+
+# checking the levels of the factor (uncomment):
+levels(projects_df$theme)
+levels(projects_df$entity)
+levels(projects_df$feature_type)
+
+# I want to investigate the total of investment on all projects.
+# in order to do this, since the variable investment is a character type and got strings involve in it, I used a library called stringr to extract the numeric value only.
+investments_numeric  <- as.numeric(str_extract(projects_df$investment, "[0-9]+"))
+total_investment <- sum(investments_numeric)
+total_investment_statement1 <- "The total investment on all projects in millions:"
+# I used paste function to combine string and integer
+total_investment_statement2 <- paste(total_investment_statement1,total_investment)
+
+total_investment_statement2
+
+# each theme investment by using filter function from dplyr
+# arts
+arts_data <- projects_df %>% filter(theme == "Arts")
+arts_int <- as.numeric(str_extract(arts_data$investment, "[0-9]+"))
+arts_invst <- sum(arts_int)
+
+total_investment_statement1_art <- "The total investment on arts in millions:"
+total_investment_statement2_art <- paste(total_investment_statement1_art,arts_invst)
+
+total_investment_statement2_art
+
+# clean energy
+clean_energy_data <- projects_df %>% filter(theme == "Clean Energy")
+clean_int <- as.numeric(str_extract(clean_energy_data$investment, "[0-9]+"))
+clean_invst <- sum(clean_int)
+
+total_investment_statement1_clean <- "The total investment on clean energy in millions:"
+total_investment_statement2_clean <- paste(total_investment_statement1_clean,clean_invst)
+
+total_investment_statement2_clean
+
+# education
+education_data <- projects_df %>% filter(theme == "Education")
+education_int <- as.numeric(str_extract(education_data$investment, "[0-9]+"))
+education_invst <- sum(education_int)
+
+total_investment_statement1_education <- "The total investment on education in millions:"
+total_investment_statement2_education <- paste(total_investment_statement1_education,education_invst)
+
+total_investment_statement2_education
+
+# emergency services
+emergency_services_data <- projects_df %>% filter(theme == "Emergency Services")
+emergency_int <- as.numeric(str_extract(emergency_services_data$investment, "[0-9]+"))
+emergency_invst <- sum(emergency_int)
+
+total_investment_statement1_emergency <- "The total investment on emergency in millions:"
+total_investment_statement2_emergency <- paste(total_investment_statement1_emergency,emergency_invst)
+
+total_investment_statement2_emergency
+
+# enviorment and parkland
+envi_and_parkland_data <- projects_df %>% filter(theme == "Environment and Parkland")
+envi_int <- as.numeric(str_extract(envi_and_parkland_data$investment, "[0-9]+"))
+envi_invst <- sum(envi_int)
+
+total_investment_statement1_envi <- "The total investment on enviorment and parkland in millions:"
+total_investment_statement2_envi <- paste(total_investment_statement1_envi,envi_invst)
+
+total_investment_statement2_envi
+
+# health
+health_data <- projects_df %>% filter(theme == "Health")
+health_int <- as.numeric(str_extract(health_data$investment, "[0-9]+"))
+health_invst <- sum(health_int)
+
+total_investment_statement1_health <- "The total investment on health in millions:"
+total_investment_statement2_health <- paste(total_investment_statement1_health,health_invst)
+
+total_investment_statement2_health
+
+# justice
+justice_data <- projects_df %>% filter(theme == "Justice")
+justice_int <- as.numeric(str_extract(justice_data$investment, "[0-9]+"))
+justice_invst <- sum(justice_int)
+
+total_investment_statement1_justice <- "The total investment on justice in millions:"
+total_investment_statement2_justice <- paste(total_investment_statement1_justice,justice_invst)
+
+total_investment_statement2_justice
+
+# mental health
+mental_health_data <- projects_df %>% filter(theme == "Mental Health")
+mental_int <- as.numeric(str_extract(mental_health_data$investment, "[0-9]+"))
+mental_invst <- sum(mental_int)
+
+total_investment_statement1_mental <- "The total investment on mental health in millions:"
+total_investment_statement2_mental <- paste(total_investment_statement1_mental,mental_invst)
+
+total_investment_statement2_mental
+
+# public housing
+public_housing_data <- projects_df %>% filter(theme == "Public Housing")
+public_int <- as.numeric(str_extract(public_housing_data$investment, "[0-9]+"))
+public_invst <- sum(public_int)
+
+total_investment_statement1_public <- "The total investment on public housing in millions:"
+total_investment_statement2_public <- paste(total_investment_statement1_public,public_invst)
+
+total_investment_statement2_public
+
+# public transport
+publictrans_transport_data <- projects_df %>% filter(theme == "Public Transport")
+publictrans_int <- as.numeric(str_extract(publictrans_transport_data$investment, "[0-9]+"))
+publictrans_invst <- sum(publictrans_int)
+
+total_investment_statement1_publictrans <- "The total investment on public transport in millions:"
+total_investment_statement2_publictrans <- paste(total_investment_statement1_publictrans,publictrans_invst)
+
+total_investment_statement2_publictrans
+
+# regional investment
+regional_investment_data <- projects_df %>% filter(theme == "Regional Investment")
+regional_int <- as.numeric(str_extract(regional_investment_data$investment, "[0-9]+"))
+regional_invst <- sum(regional_int)
+
+total_investment_statement1_regional <- "The total investment on regional investment in millions:"
+total_investment_statement2_regional <- paste(total_investment_statement1_regional,regional_invst)
+
+total_investment_statement2_regional
+
+# roads
+roads_data <- projects_df %>% filter(theme == "Roads")
+roads_int <- as.numeric(str_extract(roads_data$investment, "[0-9]+"))
+roads_invst <- sum(roads_int)
+
+total_investment_statement1_roads <- "The total investment on roads in millions:"
+total_investment_statement2_roads <- paste(total_investment_statement1_roads,roads_invst)
+
+total_investment_statement2_roads
+
+# sports and recreation
+sports_and_recreation_data <- projects_df %>% filter(theme == "Sports and Recreation")
+sports_int <- as.numeric(str_extract(sports_and_recreation_data$investment, "[0-9]+"))
+sports_invst <- sum(sports_int)
+
+total_investment_statement1_sports <- "The total investment on sports and recreation in millions:"
+total_investment_statement2_sports <- paste(total_investment_statement1_sports,sports_invst)
+
+total_investment_statement2_sports
+
+# strong communities
+strong_communities_data <- projects_df %>% filter(theme == "Strong Communities")
+strong_int <- as.numeric(str_extract(strong_communities_data$investment, "[0-9]+"))
+strong_invst <- sum(strong_int)
+
+total_investment_statement1_strong <- "The total investment on strong communities in millions:"
+total_investment_statement2_strong <- paste(total_investment_statement1_strong,strong_invst)
+
+total_investment_statement2_strong
+
+all_invst <- c(arts_invst,clean_invst,education_invst,emergency_invst,envi_invst,health_invst,justice_invst,mental_invst,public_invst,publictrans_invst,regional_invst,roads_invst,sports_invst,strong_invst)
+
+# plotting all results
+# Fitting Labels
+par(las=2) # make label text perpendicular to axis
+par(mar=c(5,8,4,2)) # increase y-axis margin.
+
+# Simple Horizontal Bar Plot with Added Labels
+barplot(all_invst, main="Investment Distribution", horiz = TRUE,names.arg=c("Arts", "Clean Energy","Education","Emergency","Enviorment and parkland","Health","Justice","Mental Health","Public Housing","Public Transport","Regional Investment","Roads","Sports and reacreation","Communities"), xlab = "in millions", xlim=c(0,15000))
+```
+
+I used class, dim, str, and attributes to view the different type of
+information about the data frame. I have then used as.factor to change
+some variables to attributes. Displayed the class of them and their
+levels. Finally, I wanted to know which theme have the largest spending
+from the state. I used filter() function from dplyr to do that. I also
+used str_extract() function from stringr to remove the characters that
+investment variable have. Using paste() function, I was able to show a
+neat statement in the command window about each theme and the amount of
+investment. I made this classic simple bar plot to represent
+all the investments. I was expecting that education would be number one in the list. I was not expecting on the other 
+
+## **Subsetting**
+
+```{r}
+
+# subset data
+projects_df_10 <- projects_df[1:10,]
+
+projects_df_10
+# converting to matrix
+projects_df_10_matrix <- as.matrix(projects_df_10)
+
+projects_df_10_matrix
+# checking if conversion happened and the schema of matrix
+class(projects_df_10_matrix)
+str(projects_df_10_matrix)
+```
+
+I first extracted the first 10 observations and changed them to matrix
+data type. I confirmed that by using class and str functions.\
+\***An explanation for the matrix structure:**\
+\*the structure explained:\
+\*this line means there are 10 observations and 11 variables (columns) \
+\*#chr [1:10, 1:11] "S_0001" "S_0002" "S_0003" "S_0004" "S_0005"
+"S_0006" "S_0007" ...\
+\*these three lines describe the columns and row header names\
+\*#- attr(\*, "dimnames")=List of 2\
+\* row numbers:\
+\*#..\$ : chr [1:10] "1" "2" "3" "4" ...\
+\* column numbers\
+\*#..\$ : chr [1:11] "unique_id" "name" "theme" "entity" ... \##
+
+**Create a new Data Frame**
+
+```{r}
+
+# Creating a new data frame 
+df1 <- data.frame (numb = c(1:10),
+                   item = c("Chair","Charger","Coffee","Radio","Controller","TV","Microwave","Cup","Bag","Apple"))
+
+# changing it to factor type
+df1$item <- df1$item %>% as.factor
+
+# sorting item alphabetically
+df1$item <- df1$item %>% sort
+
+# displaying levels
+levels(df1$item)
+
+# numeric variable
+x <- c(5,26,734,15,6,7134,713,713,1346,13)
+
+# adding x to the data frame
+df1 <- cbind(df1,x)
+
+df1
+```
+
+I first created a data frame with one int variable and one character
+type. Then, I used as.factor to change the character type to factor
+type. I used sort function to sort the factor alphabetically. I
+displayed the level of the factor by using levels(). Finally, I created
+a numeric 1D vector and used cbind to add a new column to the data
+frame.
+
+<br> <br>
